@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+    <title>ANTARES FITNESS — Sistema Pro</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.supabase.co; script-src 'self' https://cdn.jsdelivr.net https://*.supabase.co 'unsafe-inline'; connect-src 'self' https://*.supabase.co; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com;">
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    </head>
+<body>
+    <script>
+// CONFIGURACIÓN - Reemplaza con tus llaves de Supabase
+const SB_URL = "https://tu-proyecto.supabase.co";
+const SB_KEY = "tu-anon-key";
+const supabase = supabase.createClient(SB_URL, SB_KEY);
+
+// CORRECCIÓN: Función para cargar socios sin errores
+async function loadMembers() {
+    console.log("Cargando socios...");
+    const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('role', 'member');
+
+    if (error) {
+        console.error("Error cargando socios:", error);
+        return;
+    }
+
+    const container = document.getElementById('user-list-container'); // Asegúrate que este ID exista en tu HTML
+    if(container) {
+        container.innerHTML = data.map(member => `
+            <div class="user-list-item">
+                <div class="user-av">${member.full_name[0]}</div>
+                <div class="user-info">
+                    <div class="user-fullname">${member.full_name}</div>
+                </div>
+                <button onclick="openAssignRoutine('${member.id}', '${member.full_name}')" class="btn-sm">ASIGNAR</button>
+            </div>
+        `).join('');
+    }
+}
+
+// MEJORA: Guardar rutinas de forma permanente (UPSERT)
+async function saveRoutine(userId, routineData) {
+    const { error } = await supabase
+        .from('routines')
+        .upsert({ 
+            user_id: userId, 
+            content: routineData, 
+            updated_at: new Date() 
+        });
+
+    if (error) {
+        alert("Error al guardar: " + error.message);
+    } else {
+        alert("Rutina grabada permanentemente.");
+    }
+}
+
+// Inicialización automática
+document.addEventListener('DOMContentLoaded', () => {
+    supabase.auth.onAuthStateChange((event, session) => {
+        if (session) {
+            loadMembers();
+        }
+    });
+});
+</script>
+</body>
+</html>
